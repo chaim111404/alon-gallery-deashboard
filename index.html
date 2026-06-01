@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl" data-theme="dark">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Alon Gallery</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" href="images/favicon.png">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    body { background: var(--bg); }
+
+    /* LOGIN */
+    .login-screen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9000;
+    }
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius-lg);
+      padding: 3rem 2.5rem;
+      width: min(420px, 90vw);
+      text-align: center;
+    }
+    .login-logo { font-family: var(--font-display); font-size: 1.8rem; font-weight: 300; margin-bottom: 0.3rem; }
+    .login-logo span { color: var(--accent-gold); }
+    .login-sub { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 2.5rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .login-error { font-size: 0.82rem; color: #f87171; margin-top: 0.8rem; min-height: 1.2rem; }
+
+    /* DASHBOARD LAYOUT */
+    .dash-wrap { display: none; min-height: 100vh; }
+    .dash-sidebar {
+      position: fixed; top: 0; right: 0;
+      width: 240px; height: 100vh;
+      background: var(--bg-2);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 2rem 0;
+      z-index: 100;
+    }
+    body.en .dash-sidebar { right: auto; left: 0; border-left: none; border-right: 1px solid var(--border); }
+    .dash-logo { padding: 0 1.5rem 2rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .dash-logo-text { font-family: var(--font-display); font-size: 1.3rem; }
+    .dash-logo-text span { color: var(--accent-gold); }
+    .dash-logo-sub { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.1em; margin-top: 0.2rem; }
+
+    .dash-nav-item {
+      display: flex; align-items: center; gap: 0.9rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.82rem; color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      border-right: 2px solid transparent;
+    }
+    body.en .dash-nav-item { border-right: none; border-left: 2px solid transparent; }
+    .dash-nav-item:hover { color: var(--text); background: var(--surface); }
+    .dash-nav-item.active { color: var(--accent-gold); border-right-color: var(--accent-gold); background: rgba(196,160,96,0.06); }
+    body.en .dash-nav-item.active { border-left-color: var(--accent-gold); border-right-color: transparent; }
+    .dash-nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .dash-badge { margin-right: auto; background: var(--accent-gold); color: #0a0a0a; font-size: 0.65rem; font-weight: 500; border-radius: 50px; padding: 0.15rem 0.5rem; min-width: 18px; text-align: center; }
+    body.en .dash-badge { margin-right: 0; margin-left: auto; }
+
+    .dash-sidebar-bottom { margin-top: auto; padding: 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .dash-logout { font-size: 0.78rem; color: var(--text-dim); cursor: pointer; padding: 0.5rem 0; transition: color var(--transition); display: flex; align-items: center; gap: 0.5rem; }
+    .dash-logout:hover { color: #f87171; }
+
+    .dash-main {
+      margin-right: 240px;
+      padding: 2.5rem 2rem;
+      min-height: 100vh;
+    }
+    body.en .dash-main { margin-right: 0; margin-left: 240px; }
+
+    .dash-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2.5rem; }
+    .dash-page-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 300; }
+    .dash-page-title em { font-style: italic; color: var(--accent-gold); }
+
+    /* PANELS */
+    .dash-panel { display: none; }
+    .dash-panel.active { display: block; }
+
+    /* STATS CARDS */
+    .dash-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.2rem; margin-bottom: 2rem; }
+    .dash-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; }
+    .dash-stat-label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.8rem; }
+    .dash-stat-num { font-family: var(--font-display); font-size: 2.2rem; font-weight: 300; color: var(--accent-gold); line-height: 1; }
+    .dash-stat-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; }
+
+    /* TABLE */
+    .dash-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .dash-table-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .dash-table-title { font-size: 0.82rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); padding: 0.8rem 1.5rem; text-align: right; border-bottom: 1px solid var(--border); }
+    body.en th { text-align: left; }
+    td { padding: 1rem 1.5rem; font-size: 0.86rem; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge { display: inline-flex; padding: 0.25rem 0.7rem; border-radius: 50px; font-size: 0.72rem; font-weight: 400; }
+    .badge-new     { background: rgba(196,160,96,0.15); color: var(--accent-gold); }
+    .badge-read    { background: rgba(255,255,255,0.06); color: var(--text-dim); }
+    .badge-pending { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .badge-approved{ background: rgba(74,222,128,0.15); color: #4ade80; }
+    .badge-rejected{ background: rgba(248,113,113,0.15); color: #f87171; }
+
+    .action-btn { padding: 0.3rem 0.7rem; font-size: 0.72rem; border-radius: var(--radius); border: 1px solid var(--border); color: var(--text-muted); transition: all var(--transition); }
+    .action-btn:hover { border-color: var(--border-gold); color: var(--accent-gold); }
+    .action-btn.danger:hover { border-color: rgba(248,113,113,0.4); color: #f87171; }
+    .action-btn.success:hover { border-color: rgba(74,222,128,0.4); color: #4ade80; }
+
+    /* SIMPLE CHART */
+    .dash-chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 2rem; }
+    .dash-chart-title { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 0.5rem; height: 120px; }
+    .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+    .bar { width: 100%; background: linear-gradient(to top, var(--accent-gold), var(--accent-light)); border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.8s ease; }
+    .bar-label { font-size: 0.65rem; color: var(--text-dim); }
+
+    /* SEO */
+    .seo-checklist { display: flex; flex-direction: column; gap: 0.8rem; }
+    .seo-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.9rem 1.2rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .seo-status { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; }
+    .seo-ok   { background: rgba(74,222,128,0.2); color: #4ade80; }
+    .seo-warn { background: rgba(251,191,36,0.2); color: #fbbf24; }
+    .seo-text { font-size: 0.86rem; }
+    .seo-sub  { font-size: 0.75rem; color: var(--text-dim); }
+
+    /* COUNTRIES */
+    .countries-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .country-item { display: flex; align-items: center; gap: 1rem; }
+    .country-flag { font-size: 1.2rem; }
+    .country-bar-wrap { flex: 1; height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
+    .country-bar { height: 100%; background: var(--accent-gold); border-radius: 3px; }
+    .country-pct { font-size: 0.78rem; color: var(--text-muted); min-width: 35px; text-align: left; }
+
+    @media (max-width: 1100px) { .dash-stats { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 768px) {
+      .dash-sidebar { display: none; }
+      .dash-main { margin-right: 0 !important; margin-left: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ======== LOGIN ======== -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+      <div class="login-logo">Alon <span>Gallery</span></div>
+      <div class="login-sub">ניהול אתר</div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <input type="password" id="loginPass" class="form-input" placeholder="סיסמה" style="text-align:center" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">כניסה</button>
+      <div class="login-error" id="loginError"></div>
+    </div>
+  </div>
+
+  <!-- ======== DASHBOARD ======== -->
+  <div class="dash-wrap" id="dashWrap">
+
+    <!-- SIDEBAR -->
+    <aside class="dash-sidebar">
+      <div class="dash-logo">
+        <div class="dash-logo-text">Alon <span>Gallery</span></div>
+        <div class="dash-logo-sub">לוח בקרה</div>
+      </div>
+      <nav>
+        <div class="dash-nav-item active" onclick="switchPanel('overview')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          סקירה כללית
+        </div>
+        <div class="dash-nav-item" onclick="switchPanel('contacts')" id="navContacts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          פניות לקוחות
+          <span class="dash-badge" id="contactsBadge" style="display:none">0</span>
+        </div>
+        <div class="dash-nav-item" onclick="switchPanel('reviews')" id="navReviews">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          ביקורות
+          <span class="dash-badge" id="reviewsBadge" style="display:none">0</span>
+        </div>
+        <div class="dash-nav-item" onclick="switchPanel('stats')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          סטטיסטיקות
+        </div>
+        <div class="dash-nav-item" onclick="switchPanel('seo')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          SEO
+        </div>
+      </nav>
+      <div class="dash-sidebar-bottom">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:0.5rem">
+          <span style="font-size:0.72rem;color:var(--text-dim)">ערכת צבעים</span>
+          <button class="theme-toggle" style="border-color:var(--border)">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg>
+          </button>
+        </div>
+        <div class="dash-logout" onclick="doLogout()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          יציאה
+        </div>
+      </div>
+    </aside>
+
+    <main class="dash-main">
+      <div class="dash-topbar">
+        <h1 class="dash-page-title" id="pageTitle">סקירה <em>כללית</em></h1>
+        <a href="index.html" class="btn btn-ghost" style="font-size:0.75rem">← חזור לאתר</a>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div class="dash-panel active" id="panel-overview">
+        <div class="dash-stats" id="overviewStats">
+          <div class="dash-stat-card"><div class="dash-stat-label">פניות חדשות</div><div class="dash-stat-num" id="statNewContacts">—</div><div class="dash-stat-sub">לא נקראו</div></div>
+          <div class="dash-stat-card"><div class="dash-stat-label">ביקורות ממתינות</div><div class="dash-stat-num" id="statPendingReviews">—</div><div class="dash-stat-sub">ממתינות לאישור</div></div>
+          <div class="dash-stat-card"><div class="dash-stat-label">סה״כ פניות</div><div class="dash-stat-num" id="statTotalContacts">—</div><div class="dash-stat-sub">מאז ההשקה</div></div>
+          <div class="dash-stat-card"><div class="dash-stat-label">ביקורות מפורסמות</div><div class="dash-stat-num" id="statPublishedReviews">—</div><div class="dash-stat-sub">גלויות לציבור</div></div>
+        </div>
+
+        <!-- Recent contacts preview -->
+        <div class="dash-table-wrap" style="margin-bottom:2rem">
+          <div class="dash-table-header"><span class="dash-table-title">פניות אחרונות</span><button class="action-btn" onclick="switchPanel('contacts')">הכל</button></div>
+          <table><thead><tr><th>שם</th><th>טלפון</th><th>שירות</th><th>תאריך</th><th>סטטוס</th></tr></thead>
+          <tbody id="overviewContactsTable"><tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:2rem">טוען...</td></tr></tbody></table>
+        </div>
+
+        <!-- Simple bar chart - visits by month (placeholder) -->
+        <div class="dash-chart-wrap">
+          <div class="dash-chart-title">כניסות לאתר — 6 חודשים אחרונים</div>
+          <div class="bar-chart" id="visitChart"></div>
+          <p style="font-size:0.75rem;color:var(--text-dim);margin-top:1rem">
+            * כדי לראות נתוני כניסות אמיתיים, חבר Google Analytics או Vercel Analytics לאתר ← 
+            <a href="https://analytics.google.com" target="_blank" style="color:var(--accent-gold)">Google Analytics</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- CONTACTS -->
+      <div class="dash-panel" id="panel-contacts">
+        <div class="dash-table-wrap">
+          <div class="dash-table-header">
+            <span class="dash-table-title">פניות לקוחות</span>
+            <button class="action-btn" onclick="markAllRead()">סמן הכל כנקרא</button>
+          </div>
+          <table><thead><tr><th>שם</th><th>טלפון</th><th>אימייל</th><th>שירות</th><th>הודעה</th><th>תאריך</th><th>סטטוס</th><th>פעולה</th></tr></thead>
+          <tbody id="contactsTable"><tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:2rem">טוען...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- REVIEWS -->
+      <div class="dash-panel" id="panel-reviews">
+        <div class="dash-table-wrap">
+          <div class="dash-table-header"><span class="dash-table-title">ביקורות</span></div>
+          <table><thead><tr><th>שם</th><th>דירוג</th><th>ביקורת</th><th>תאריך</th><th>סטטוס</th><th>פעולה</th></tr></thead>
+          <tbody id="reviewsTable"><tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem">טוען...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="dash-panel" id="panel-stats">
+        <div class="dash-stats">
+          <div class="dash-stat-card"><div class="dash-stat-label">מדינות מבקרים</div><div class="dash-stat-num">3</div><div class="dash-stat-sub">Google Analytics נדרש</div></div>
+          <div class="dash-stat-card"><div class="dash-stat-label">זמן ממוצע באתר</div><div class="dash-stat-num">—</div><div class="dash-stat-sub">Google Analytics נדרש</div></div>
+          <div class="dash-stat-card"><div class="dash-stat-label">עמוד פופולרי</div><div class="dash-stat-num">גלריה</div><div class="dash-stat-sub">Google Analytics נדרש</div></div>
+          <div class="dash-stat-card"><div class="dash-stat-label">שיעור המרה</div><div class="dash-stat-num">—</div><div class="dash-stat-sub">Google Analytics נדרש</div></div>
+        </div>
+
+        <!-- Countries (placeholder) -->
+        <div class="dash-chart-wrap">
+          <div class="dash-chart-title">מדינות צפייה (placeholder — חבר Google Analytics)</div>
+          <div class="countries-list">
+            <div class="country-item"><span class="country-flag">🇮🇱</span><span style="font-size:0.85rem;min-width:80px">ישראל</span><div class="country-bar-wrap"><div class="country-bar" style="width:78%"></div></div><span class="country-pct">78%</span></div>
+            <div class="country-item"><span class="country-flag">🇺🇸</span><span style="font-size:0.85rem;min-width:80px">ארה״ב</span><div class="country-bar-wrap"><div class="country-bar" style="width:12%"></div></div><span class="country-pct">12%</span></div>
+            <div class="country-item"><span class="country-flag">🇩🇪</span><span style="font-size:0.85rem;min-width:80px">גרמניה</span><div class="country-bar-wrap"><div class="country-bar" style="width:5%"></div></div><span class="country-pct">5%</span></div>
+            <div class="country-item"><span class="country-flag">🇫🇷</span><span style="font-size:0.85rem;min-width:80px">צרפת</span><div class="country-bar-wrap"><div class="country-bar" style="width:5%"></div></div><span class="country-pct">5%</span></div>
+          </div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-dim)">
+          לנתוני סטטיסטיקה אמיתיים: חבר Google Analytics (הכנס את קוד ה-GTM ב-index.html) או הפעל Vercel Analytics מה-Vercel Dashboard.
+        </p>
+      </div>
+
+      <!-- SEO -->
+      <div class="dash-panel" id="panel-seo">
+        <div style="margin-bottom:2rem">
+          <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:1.5rem">בדיקת SEO סטטית — עדכן בהתאם לשינויים שעשית באתר</p>
+          <div class="seo-checklist">
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Title tag — כל עמוד</div><div class="seo-sub">כל עמוד מכיל title ייחודי</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Meta description</div><div class="seo-sub">כל עמוד מכיל תיאור מטא</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Open Graph tags</div><div class="seo-sub">שיתוף WhatsApp/Facebook תקין</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Schema.org LocalBusiness</div><div class="seo-sub">JSON-LD בדף הבית</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Schema.org ImageGallery</div><div class="seo-sub">JSON-LD בעמוד הגלריה</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Canonical URLs</div><div class="seo-sub">כל עמוד עם canonical</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Mobile responsive</div><div class="seo-sub">האתר מותאם לנייד</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-ok">✓</div><div><div class="seo-text">Alt tags לתמונות</div><div class="seo-sub">כל תמונה עם alt</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-warn">!</div><div><div class="seo-text">Sitemap.xml</div><div class="seo-sub">יש ליצור ולהעלות sitemap.xml לשורש האתר</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-warn">!</div><div><div class="seo-text">Google Analytics</div><div class="seo-sub">יש לחבר Google Analytics / GTM</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-warn">!</div><div><div class="seo-text">Google Search Console</div><div class="seo-sub">יש להגיש את האתר ל-Google Search Console</div></div></div>
+            <div class="seo-item"><div class="seo-status seo-warn">!</div><div><div class="seo-text">תמונות אמיתיות</div><div class="seo-sub">החלף תמונות placeholder בתמונות שלך</div></div></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/main.js" type="module"></script>
+  <script type="module">
+    import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getDatabase, ref, get, update, remove, query, orderByChild, equalTo } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+    const FIREBASE_CONFIG = { apiKey:"AIzaSyA3Ee9EyCqt51ikAa3-zLjmh-KSXdhX8yQ",authDomain:"alon-gallery.firebaseapp.com",databaseURL:"https://alon-gallery-default-rtdb.firebaseio.com",projectId:"alon-gallery",storageBucket:"alon-gallery.firebasestorage.app",messagingSenderId:"1067707889353",appId:"1:1067707889353:web:3e4f7d6f4bef1d01cbff18" };
+    const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+    const db  = getDatabase(app);
+
+    /* ── PASSWORDS ──
+       שנה כאן את הסיסמאות:
+       ADMIN = גישה מלאה
+       HELPER = עתידי — גישה מוגבלת (כרגע זהה ל-ADMIN)
+    */
+    const PASSWORDS = {
+      admin:  'alon2025!',   // שנה לסיסמה שלך
+      helper: 'helper2025'   // לעוזר עתידי
+    };
+
+    let currentUser = null;
+
+    /* LOGIN */
+    window.doLogin = function() {
+      const pass = document.getElementById('loginPass').value;
+      if (pass === PASSWORDS.admin || pass === PASSWORDS.helper) {
+        currentUser = pass === PASSWORDS.admin ? 'admin' : 'helper';
+        sessionStorage.setItem('ag-dash-auth', currentUser);
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashWrap').style.display = 'flex';
+        loadAll();
+      } else {
+        document.getElementById('loginError').textContent = 'סיסמה שגויה';
+        setTimeout(() => document.getElementById('loginError').textContent = '', 2000);
+      }
+    };
+
+    window.doLogout = function() {
+      sessionStorage.removeItem('ag-dash-auth');
+      location.reload();
+    };
+
+    // Auto-login if session exists
+    const savedAuth = sessionStorage.getItem('ag-dash-auth');
+    if (savedAuth) {
+      currentUser = savedAuth;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashWrap').style.display = 'flex';
+      loadAll();
+    }
+
+    /* PANEL SWITCHING */
+    window.switchPanel = function(name) {
+      document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.dash-nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      const nav = document.querySelector(`[onclick="switchPanel('${name}')"]`);
+      if (nav) nav.classList.add('active');
+      const titles = { overview:'סקירה <em>כללית</em>', contacts:'פניות <em>לקוחות</em>', reviews:'<em>ביקורות</em>', stats:'<em>סטטיסטיקות</em>', seo:'<em>SEO</em>' };
+      document.getElementById('pageTitle').innerHTML = titles[name] || name;
+    };
+
+    /* LOAD ALL */
+    async function loadAll() {
+      await Promise.all([loadContacts(), loadReviews()]);
+      buildChart();
+    }
+
+    let allContacts = [];
+    let allReviews  = [];
+
+    async function loadContacts() {
+      try {
+        const snap = await get(ref(db,'contacts'));
+        if (!snap.exists()) { allContacts = []; renderContactsTable(); return; }
+        allContacts = [];
+        snap.forEach(c => allContacts.push({ id:c.key, ...c.val() }));
+        allContacts.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+        renderContactsTable();
+        renderOverviewContacts();
+        updateBadges();
+      } catch(e) { console.error(e); }
+    }
+
+    async function loadReviews() {
+      try {
+        const snap = await get(ref(db,'reviews'));
+        if (!snap.exists()) { allReviews = []; renderReviewsTable(); return; }
+        allReviews = [];
+        snap.forEach(r => allReviews.push({ id:r.key, ...r.val() }));
+        allReviews.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
+        renderReviewsTable();
+        updateBadges();
+      } catch(e) { console.error(e); }
+    }
+
+    function updateBadges() {
+      const newC = allContacts.filter(c => !c.read).length;
+      const pendR = allReviews.filter(r => !r.approved && r.approved !== false).length + allReviews.filter(r=>r.approved===undefined).length;
+      const pendReviews = allReviews.filter(r => r.approved === false || r.approved === undefined || r.approved === null).length;
+      const approvedR = allReviews.filter(r => r.approved === true).length;
+
+      document.getElementById('statNewContacts').textContent = newC;
+      document.getElementById('statPendingReviews').textContent = allReviews.filter(r=>!r.approved).length;
+      document.getElementById('statTotalContacts').textContent = allContacts.length;
+      document.getElementById('statPublishedReviews').textContent = approvedR;
+
+      const cb = document.getElementById('contactsBadge');
+      if (newC > 0) { cb.textContent = newC; cb.style.display = ''; } else { cb.style.display = 'none'; }
+      const rb = document.getElementById('reviewsBadge');
+      const rp = allReviews.filter(r=>r.approved===false||r.approved===undefined||r.approved===null).length;
+      if (rp > 0) { rb.textContent = rp; rb.style.display = ''; } else { rb.style.display = 'none'; }
+    }
+
+    function fmtDate(ts) {
+      if (!ts) return '—';
+      return new Date(ts).toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
+    function truncate(str,n) { return str && str.length > n ? str.slice(0,n)+'...' : (str||'—'); }
+
+    function renderContactsTable() {
+      const tb = document.getElementById('contactsTable');
+      if (!allContacts.length) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:2rem">אין פניות עדיין</td></tr>'; return; }
+      tb.innerHTML = allContacts.map(c => `
+        <tr id="crow-${c.id}">
+          <td><strong>${c.name||'—'}</strong></td>
+          <td><a href="tel:${c.phone}" style="color:var(--accent-gold)">${c.phone||'—'}</a></td>
+          <td>${c.email||'—'}</td>
+          <td>${c.service||'—'}</td>
+          <td title="${c.message||''}">${truncate(c.message,60)}</td>
+          <td style="white-space:nowrap">${fmtDate(c.timestamp)}</td>
+          <td><span class="badge ${c.read?'badge-read':'badge-new'}">${c.read?'נקרא':'חדש'}</span></td>
+          <td style="white-space:nowrap;display:flex;gap:0.4rem">
+            ${!c.read?`<button class="action-btn" onclick="markRead('${c.id}')">סמן נקרא</button>`:''}
+            <button class="action-btn danger" onclick="deleteContact('${c.id}')">מחק</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    function renderOverviewContacts() {
+      const tb = document.getElementById('overviewContactsTable');
+      const recent = allContacts.slice(0,5);
+      if (!recent.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:2rem">אין פניות עדיין</td></tr>'; return; }
+      tb.innerHTML = recent.map(c=>`
+        <tr><td><strong>${c.name||'—'}</strong></td><td><a href="tel:${c.phone}" style="color:var(--accent-gold)">${c.phone||'—'}</a></td><td>${c.service||'—'}</td><td>${fmtDate(c.timestamp)}</td><td><span class="badge ${c.read?'badge-read':'badge-new'}">${c.read?'נקרא':'חדש'}</span></td></tr>`).join('');
+    }
+
+    function renderReviewsTable() {
+      const tb = document.getElementById('reviewsTable');
+      if (!allReviews.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:2rem">אין ביקורות עדיין</td></tr>'; return; }
+      tb.innerHTML = allReviews.map(r=>{
+        const stars = '★'.repeat(r.rating||5);
+        const isApproved = r.approved === true;
+        const isPending = r.approved === false || r.approved === undefined || r.approved === null;
+        return `
+        <tr id="rrow-${r.id}">
+          <td><strong>${r.name||'—'}</strong></td>
+          <td style="color:var(--accent-gold)">${stars}</td>
+          <td title="${r.text||''}">${truncate(r.text,80)}</td>
+          <td>${fmtDate(r.timestamp)}</td>
+          <td><span class="badge ${isApproved?'badge-approved':'badge-pending'}">${isApproved?'מפורסם':'ממתין'}</span></td>
+          <td style="display:flex;gap:0.4rem;flex-wrap:wrap">
+            ${isPending?`<button class="action-btn success" onclick="approveReview('${r.id}')">אשר</button>`:''}
+            ${isApproved?`<button class="action-btn" onclick="rejectReview('${r.id}')">הסר</button>`:''}
+            <button class="action-btn danger" onclick="deleteReview('${r.id}')">מחק</button>
+          </td>
+        </tr>`;}).join('');
+    }
+
+    /* ACTIONS */
+    window.markRead = async function(id) {
+      await update(ref(db,'contacts/'+id), { read: true });
+      const c = allContacts.find(x=>x.id===id);
+      if (c) c.read = true;
+      renderContactsTable();
+      renderOverviewContacts();
+      updateBadges();
+    };
+    window.markAllRead = async function() {
+      const unread = allContacts.filter(c=>!c.read);
+      await Promise.all(unread.map(c=>update(ref(db,'contacts/'+c.id),{read:true})));
+      allContacts.forEach(c=>c.read=true);
+      renderContactsTable();
+      updateBadges();
+    };
+    window.deleteContact = async function(id) {
+      if (!confirm('למחוק פנייה זו?')) return;
+      await remove(ref(db,'contacts/'+id));
+      allContacts = allContacts.filter(c=>c.id!==id);
+      renderContactsTable();
+      renderOverviewContacts();
+      updateBadges();
+    };
+    window.approveReview = async function(id) {
+      await update(ref(db,'reviews/'+id), { approved: true });
+      const r = allReviews.find(x=>x.id===id);
+      if (r) r.approved = true;
+      renderReviewsTable();
+      updateBadges();
+    };
+    window.rejectReview = async function(id) {
+      await update(ref(db,'reviews/'+id), { approved: false });
+      const r = allReviews.find(x=>x.id===id);
+      if (r) r.approved = false;
+      renderReviewsTable();
+      updateBadges();
+    };
+    window.deleteReview = async function(id) {
+      if (!confirm('למחוק ביקורת זו לצמיתות?')) return;
+      await remove(ref(db,'reviews/'+id));
+      allReviews = allReviews.filter(r=>r.id!==id);
+      renderReviewsTable();
+      updateBadges();
+    };
+
+    /* CHART */
+    function buildChart() {
+      const months = ['יול','אוג','ספט','אוק','נוב','דצמ'];
+      const values = [4,7,5,9,12,8]; // placeholder — יוחלף בנתוני Google Analytics
+      const max = Math.max(...values);
+      const chart = document.getElementById('visitChart');
+      if (!chart) return;
+      chart.innerHTML = months.map((m,i)=>`
+        <div class="bar-item">
+          <div class="bar" style="height:${(values[i]/max)*100}px"></div>
+          <div class="bar-label">${m}</div>
+        </div>`).join('');
+    }
+  </script>
+</body>
+</html>
